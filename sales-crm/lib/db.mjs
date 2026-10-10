@@ -99,6 +99,31 @@ CREATE TABLE IF NOT EXISTS handovers (
   updated_at          TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS contract_payments (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  contract_id  INTEGER NOT NULL REFERENCES contracts(id),
+  amount       REAL NOT NULL,
+  pay_date     TEXT NOT NULL,
+  method       TEXT,                              -- 银行转账 / 支票 / 现金 / 其他
+  remark       TEXT,
+  created_by   TEXT,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_payments_contract ON contract_payments(contract_id, pay_date);
+
+-- ===== 数字销售总监 =====
+CREATE TABLE IF NOT EXISTS sales_director_reports (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  period_from  TEXT,                              -- NULL = 不限
+  period_to    TEXT,
+  status       TEXT NOT NULL DEFAULT 'generating', -- generating | done | error
+  summary      TEXT,
+  content      TEXT,                              -- JSON:{stats, analysis}
+  created_by   TEXT,
+  created_at   TEXT NOT NULL,
+  finished_at  TEXT
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key    TEXT PRIMARY KEY,
   value  TEXT

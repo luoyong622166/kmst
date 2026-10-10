@@ -7,6 +7,7 @@ import { openDb } from "./lib/db.mjs";
 import { buildRoutes, HttpError } from "./lib/api.mjs";
 import { LookupError } from "./lib/lookup.mjs";
 import { DIRECTOR_NAME, startScheduler } from "./lib/director.mjs";
+import { startSalesScheduler } from "./lib/sales-director.mjs";
 
 const PORT = Number(process.env.CRM_PORT || 3100);
 const HOST = process.env.CRM_HOST || "127.0.0.1";
@@ -112,6 +113,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => console.log(`[sales-crm] listening on ${HOST}:${PORT}, db=${DB_FILE}`));
 startScheduler(db);
+startSalesScheduler(db);
 
 for (const sig of ["SIGINT", "SIGTERM"]) {
   process.on(sig, () => {

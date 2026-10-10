@@ -94,7 +94,20 @@ export type Contract = {
   handover_id?: number | null;
   handover_status?: string | null;
   handover?: { id: number; handover_no: string; status: string } | null;
+  received?: number;
+  payments?: ContractPayment[];
   opportunity?: Pick<Opportunity, "id" | "name" | "credit_code" | "contact_name" | "contact_phone" | "owner" | "stage">;
+};
+
+export type ContractPayment = {
+  id: number;
+  contract_id: number;
+  amount: number;
+  pay_date: string;
+  method: string | null;
+  remark: string | null;
+  created_by: string | null;
+  created_at: string;
 };
 
 export type ContractTemplate = {

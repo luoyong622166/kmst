@@ -19,7 +19,7 @@ import {
 import { nowISO, todayCN } from "./util.mjs";
 
 const PLATFORM_URL = process.env.CRM_PLATFORM_URL || "http://127.0.0.1:3000";
-const ROLES = { director: "实施总监", consultant: "实施顾问", gm: "总经理" };
+export const ROLES = { director: "实施总监", consultant: "实施顾问", gm: "总经理", sales_manager: "销售经理" };
 const STAGE_KEYS = IMPL_STAGES.map(s => s.key);
 
 // ---------- 小工具 ----------
@@ -37,14 +37,14 @@ function date(v, label) {
 
 // 角色以「团队成员」里设置的为准;平台子账号(openId 以 sub_ 开头)在平台上也是 role=admin,
 // 所以只有平台主管理员账号(非子账号)且未被设为成员时,才拥有全部角色
-function rolesOf(db, user) {
-  if (user.role === "agent") return new Set(["agent", "director", "gm"]);
+export function rolesOf(db, user) {
+  if (user.role === "agent") return new Set(["agent", "director", "gm", "sales_manager"]);
   const m = db.prepare("SELECT role FROM impl_members WHERE user_id = ?").get(user.id);
   if (m) return new Set([m.role]);
   const isOwner = user.role === "admin" && !String(user.openId ?? "").startsWith("sub_");
-  return new Set(isOwner ? ["admin", "director", "consultant", "gm"] : []);
+  return new Set(isOwner ? ["admin", "director", "consultant", "gm", "sales_manager"] : []);
 }
-function requireRole(db, user, ...roles) {
+export function requireRole(db, user, ...roles) {
   const mine = rolesOf(db, user);
   if (!roles.some(r => mine.has(r))) throw new HttpError(403, `没有权限:需要${roles.map(r => ROLES[r] ?? r).join("或")}角色`);
 }

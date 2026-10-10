@@ -32,7 +32,7 @@ import {
   useImplMeta,
 } from "./shared";
 
-const ROLE_LABEL: Record<string, string> = { director: "实施总监", consultant: "实施顾问", gm: "总经理" };
+const ROLE_LABEL: Record<string, string> = { director: "实施总监", consultant: "实施顾问", gm: "总经理", sales_manager: "销售经理" };
 
 function plusDays(d: string, n: number) {
   const t = new Date(d + "T00:00:00Z");

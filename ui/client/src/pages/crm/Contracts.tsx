@@ -24,7 +24,7 @@ import {
 } from "@/lib/crmApi";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Edit, Eye, FileText, Loader2, Plus, Printer, Search, Send, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Edit, Eye, FileText, Loader2, Plus, Printer, Search, Send, Trash2, Wallet, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
@@ -244,6 +244,115 @@ function ContractDialog({
   );
 }
 
+const PAY_METHODS = ["银行转账", "承兑汇票", "支票", "现金", "其他"];
+
+/** 收款登记:已签订合同按实际到账逐笔登记,数字销售总监据此统计回款 */
+function PaymentsPanel({ c }: { c: Contract }) {
+  const qc = useQueryClient();
+  const blank = () => ({ amount: "", pay_date: today(), method: "银行转账", remark: "" });
+  const [form, setForm] = useState(blank);
+  const received = c.received ?? 0;
+  const unpaid = Math.round((c.amount - received) * 100) / 100;
+  const refresh = () => qc.invalidateQueries({ queryKey: ["crm"] });
+  const add = useMutation({
+    mutationFn: () => crm(`/contracts/${c.id}/payments`, { method: "POST", body: form }),
+    onSuccess: () => {
+      toast.success("收款已登记");
+      setForm(blank());
+      refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (pid: number) => crm(`/payments/${pid}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("收款记录已删除");
+      refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+        <span className="font-medium flex items-center gap-1">
+          <Wallet className="h-4 w-4" />
+          收款情况
+        </span>
+        <span>已收 {fmtMoney(received)}</span>
+        <span className={cn(unpaid > 0 ? "text-amber-700" : "text-emerald-700")}>{unpaid > 0 ? `未收 ${fmtMoney(unpaid)}` : "已全部收款"}</span>
+        {c.payment_terms && <span className="text-muted-foreground text-xs basis-full">付款方式:{c.payment_terms}</span>}
+      </div>
+      {!!c.payments?.length && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-28">收款日期</TableHead>
+              <TableHead className="w-32 text-right">金额</TableHead>
+              <TableHead className="w-24">方式</TableHead>
+              <TableHead>备注</TableHead>
+              <TableHead className="w-24">登记人</TableHead>
+              <TableHead className="w-12" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {c.payments.map(p => (
+              <TableRow key={p.id}>
+                <TableCell>{p.pay_date}</TableCell>
+                <TableCell className="text-right">{fmtMoney(p.amount)}</TableCell>
+                <TableCell>{p.method || "-"}</TableCell>
+                <TableCell className="text-muted-foreground">{p.remark || "-"}</TableCell>
+                <TableCell>{p.created_by}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      if (window.confirm(`删除 ${p.pay_date} 的这笔收款 ${fmtMoney(p.amount)}?`)) remove.mutate(p.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {unpaid > 0 && (
+        <div className="flex flex-wrap items-end gap-2">
+          <Field label="收款金额(元)" className="w-36">
+            <Input type="number" min={0} value={form.amount} placeholder={String(unpaid)} onChange={e => setForm({ ...form, amount: e.target.value })} />
+          </Field>
+          <Field label="收款日期" className="w-40">
+            <Input type="date" value={form.pay_date} onChange={e => setForm({ ...form, pay_date: e.target.value })} />
+          </Field>
+          <Field label="方式" className="w-32">
+            <Select value={form.method} onValueChange={v => setForm({ ...form, method: v })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAY_METHODS.map(m => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="备注" className="flex-1 min-w-40">
+            <Input value={form.remark} placeholder="如:首付款 50%" onChange={e => setForm({ ...form, remark: e.target.value })} />
+          </Field>
+          <Button onClick={() => add.mutate()} disabled={add.isPending || !form.amount}>
+            {add.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+            登记收款
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ContractView({ id, onClose, onEdit }: { id: number | null; onClose: () => void; onEdit: (c: Contract) => void }) {
   const qc = useQueryClient();
   const [, navigate] = useLocation();
@@ -277,6 +386,7 @@ function ContractView({ id, onClose, onEdit }: { id: number | null; onClose: () 
                 创建:{c.created_by} {fmtTime(c.created_at)}
               </span>
             </div>
+            {c.status === "signed" && <PaymentsPanel c={c} />}
             <DocFrame title={title} html={c.content} className="h-[60vh]" />
             <DialogFooter className="flex-wrap gap-2 sm:justify-between">
               <div className="flex gap-2">
@@ -419,6 +529,7 @@ function ContractList() {
               <TableHead>客户</TableHead>
               <TableHead>项目名称</TableHead>
               <TableHead className="w-32 text-right">合同金额</TableHead>
+              <TableHead className="w-32 text-right">已收款</TableHead>
               <TableHead className="w-28">签订日期</TableHead>
               <TableHead className="w-24">状态</TableHead>
               <TableHead className="w-28">交接</TableHead>
@@ -428,14 +539,14 @@ function ContractList() {
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin inline" />
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && !data?.items.length && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
                   暂无合同。项目成交后,可在此或商机详情中「生成合同」
                 </TableCell>
               </TableRow>
@@ -446,6 +557,9 @@ function ContractList() {
                 <TableCell className="font-medium">{c.customer_name}</TableCell>
                 <TableCell>{c.project_name}</TableCell>
                 <TableCell className="text-right">{fmtMoney(c.amount)}</TableCell>
+                <TableCell className={cn("text-right", c.status === "signed" && (c.received ?? 0) < c.amount && "text-amber-700")}>
+                  {c.status === "signed" ? fmtMoney(c.received ?? 0) : "-"}
+                </TableCell>
                 <TableCell>{c.sign_date || "-"}</TableCell>
                 <TableCell>
                   <StatusBadge map={CONTRACT_STATUS} status={c.status} />

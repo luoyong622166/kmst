@@ -95,12 +95,12 @@ export function runPatrol(db) {
 }
 
 // ---------- 2. 大模型审核 ----------
-export async function askDirector(content, sessionKey) {
+export async function askDirector(content, sessionKey, agentKey = AGENT_KEY) {
   const secret = process.env.PLATFORM_INTERNAL_SECRET;
   if (!secret) throw new Error("数字总监未接通平台(缺少 PLATFORM_INTERNAL_SECRET 配置)");
   let res;
   try {
-    res = await fetch(`${PLATFORM_URL}/api/custom-agent/${AGENT_KEY}/run`, {
+    res = await fetch(`${PLATFORM_URL}/api/custom-agent/${agentKey}/run`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
       body: JSON.stringify({ content, sessionKey, audience: "internal" }),

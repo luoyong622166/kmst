@@ -60,9 +60,11 @@ sed -i '/^PLATFORM_INTERNAL_SECRET=/d; /^CRM_INTERNAL_TOKEN=/d' "$ENV_FILE"
 printf 'PLATFORM_INTERNAL_SECRET=%s\nCRM_INTERNAL_TOKEN=%s\n' "$INTERNAL_SECRET" "$CRM_TOKEN" >> "$ENV_FILE"
 mkdir -p /var/lib/sales-crm/files
 
-# 实施管理数字总监:平台自建 AI 员工
+# 实施管理数字总监、数字销售总监:平台自建 AI 员工
 mkdir -p "$APP_DIR/custom/agents/impl_director"
 cp "$REPO_DIR/agent/impl_director/"* "$APP_DIR/custom/agents/impl_director/"
+mkdir -p "$APP_DIR/custom/agents/sales_director"
+cp "$REPO_DIR/agent/sales_director/"* "$APP_DIR/custom/agents/sales_director/"
 
 # 平台端口取自平台 .env(nginx 接管 80 后平台在 3000)
 PLATFORM_PORT=$(grep -E '^PORT=' "$APP_DIR/.env" | head -1 | cut -d= -f2- || true)

@@ -1,6 +1,6 @@
 /**
  * 销售管理 · 商机管理
- * 路由: /crm/opportunities
+ * 路由: /crm/opportunities(?view=<商机id> 直接打开详情)
  * 商机 = 意向客户。录入时对接工商信息取统一社会信用代码,按信用代码 + 企业名双重查重,保证一家企业只有一条商机。
  */
 import DashboardLayout from "@/components/DashboardLayout";
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Building2, CheckCircle2, Edit, FileSignature, Loader2, MessageSquarePlus, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { FollowupDialog } from "./Followups";
 import { CONTRACT_STATUS, Field, FilterChips, fmtMoney, PageHeader, StageBadge, StatusBadge, useCrmMeta } from "./shared";
@@ -496,6 +496,17 @@ export default function CrmOpportunities() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Opportunity | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const search = useSearch();
+  const [, navigate] = useLocation();
+
+  // 从数字销售总监等页面跳转过来:?view=<商机id> 直接打开详情
+  useEffect(() => {
+    const view = Number(new URLSearchParams(search).get("view"));
+    if (view) {
+      setDetailId(view);
+      navigate("/crm/opportunities", { replace: true });
+    }
+  }, [search, navigate]);
 
   const { data: stats } = useQuery({
     queryKey: ["crm", "stats"],

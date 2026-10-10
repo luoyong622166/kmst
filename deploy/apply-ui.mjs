@@ -9,6 +9,7 @@ const APP_DIR = process.argv[2] || "/opt/xiyejia-training";
 const REPO_UI = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "ui");
 const CRM = "[kmst-crm]";
 const IMPL = "[kmst-impl]";
+const SALESDIR = "[kmst-salesdir]";
 
 function copyTree(src, dst) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -191,6 +192,34 @@ patch("shared/editionProfiles.ts", IMPL, [
 `,
   },
   { anchor: '"materials", "sales_mgmt"],', where: "replace", insert: '"materials", "sales_mgmt", "impl_mgmt"],' },
+]);
+
+console.log("==> 数字销售总监:路由 / 菜单");
+patch("client/src/App.tsx", SALESDIR, [
+  {
+    anchor: 'import CrmHandovers from "./pages/crm/Handovers";\n',
+    where: "after",
+    insert: `import CrmDirector from "./pages/crm/Director"; // ${SALESDIR}\n`,
+  },
+  {
+    anchor: '      <Route path="/crm/handovers" component={CrmHandovers} />\n',
+    where: "after",
+    insert: `      <Route path="/crm/director" component={CrmDirector} /> {/* ${SALESDIR} */}\n`,
+  },
+]);
+patch("client/src/components/menuConfig.ts", SALESDIR, [
+  {
+    anchor: '      { icon: ClipboardCheck, label: "销售交接", path: "/crm/handovers" },\n',
+    where: "after",
+    insert: `      { icon: Bot, label: "数字销售总监", path: "/crm/director" }, // ${SALESDIR}\n`,
+  },
+]);
+patch("shared/editionProfiles.ts", SALESDIR, [
+  {
+    anchor: 'menuPaths: ["/crm/opportunities", "/crm/followups", "/crm/contracts", "/crm/handovers"],',
+    where: "replace",
+    insert: `menuPaths: ["/crm/opportunities", "/crm/followups", "/crm/contracts", "/crm/handovers", "/crm/director"], // ${SALESDIR}`,
+  },
 ]);
 
 console.log("==> 完成");

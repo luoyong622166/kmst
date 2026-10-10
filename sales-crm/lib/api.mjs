@@ -5,6 +5,7 @@ import { companyDetail, lookupProvider, searchCompanies } from "./lookup.mjs";
 import { companyNameKey, isValidCreditCode, normalizeCreditCode, nowISO, todayCN } from "./util.mjs";
 import { HttpError } from "./errors.mjs";
 import { registerImplRoutes } from "./impl.mjs";
+import { registerSalesDirectorRoutes } from "./sales-director.mjs";
 
 export { HttpError };
 
@@ -225,7 +226,8 @@ function listContracts(db, q) {
   const items = db
     .prepare(
       `SELECT c.id, c.contract_no, c.opportunity_id, c.project_name, c.amount, c.sign_date, c.status, c.modules,
-              c.created_by, c.created_at, o.name AS customer_name, h.id AS handover_id, h.status AS handover_status
+              c.created_by, c.created_at, o.name AS customer_name, h.id AS handover_id, h.status AS handover_status,
+              (SELECT COALESCE(SUM(p.amount), 0) FROM contract_payments p WHERE p.contract_id = c.id) AS received
        FROM contracts c JOIN opportunities o ON o.id = c.opportunity_id
        LEFT JOIN handovers h ON h.contract_id = c.id ${w}
        ORDER BY c.id DESC LIMIT ? OFFSET ?`
@@ -233,6 +235,10 @@ function listContracts(db, q) {
     .all(...args, pageSize, offset)
     .map(contractRow);
   return { items, total, page, pageSize };
+}
+
+function receivedOf(db, contractId) {
+  return db.prepare("SELECT COALESCE(SUM(amount), 0) AS n FROM contract_payments WHERE contract_id = ?").get(contractId).n;
 }
 
 // ---------- 交接 ----------
@@ -446,6 +452,8 @@ export function buildRoutes(db) {
     const c = contractRow(getOr404(db, "SELECT * FROM contracts WHERE id = ?", Number(params.id), "合同"));
     c.opportunity = db.prepare("SELECT id, name, credit_code, contact_name, contact_phone, owner, stage FROM opportunities WHERE id = ?").get(c.opportunity_id);
     c.handover = db.prepare("SELECT id, handover_no, status FROM handovers WHERE contract_id = ?").get(c.id) ?? null;
+    c.payments = db.prepare("SELECT * FROM contract_payments WHERE contract_id = ? ORDER BY pay_date, id").all(c.id);
+    c.received = receivedOf(db, c.id);
     return c;
   });
   add("PUT", "/contracts/:id", ({ params, body }) => {
@@ -478,8 +486,34 @@ export function buildRoutes(db) {
     const c = getOr404(db, "SELECT * FROM contracts WHERE id = ?", id, "合同");
     if (c.status === "void") throw new HttpError(400, "合同已作废");
     if (db.prepare("SELECT 1 FROM handovers WHERE contract_id = ?").get(id)) throw new HttpError(400, "该合同已生成交接单,不能作废");
+    if (receivedOf(db, id) > 0) throw new HttpError(400, "该合同已有收款记录,不能作废");
     db.prepare("UPDATE contracts SET status = 'void', updated_at = ? WHERE id = ?").run(nowISO(), id);
     return contractRow(db.prepare("SELECT * FROM contracts WHERE id = ?").get(id));
+  });
+
+  // 收款登记:只登记已签订的合同,累计不能超过合同金额
+  add("POST", "/contracts/:id/payments", ({ params, body, user }) => {
+    const c = getOr404(db, "SELECT * FROM contracts WHERE id = ?", Number(params.id), "合同");
+    if (c.status !== "signed") throw new HttpError(400, "只有已签订的合同才能登记收款");
+    const amount = money(body.amount, "收款金额");
+    if (!(amount > 0)) throw new HttpError(400, "收款金额必须大于 0");
+    const payDate = date(body.pay_date, "收款日期", { optional: false });
+    return tx(db, () => {
+      const left = Math.round((c.amount - receivedOf(db, c.id)) * 100) / 100;
+      if (amount > left) throw new HttpError(400, `收款金额超过未收余额(还剩 ${left} 元未收)`);
+      const now = nowISO();
+      db.prepare("INSERT INTO contract_payments (contract_id, amount, pay_date, method, remark, created_by, created_at) VALUES (?,?,?,?,?,?,?)").run(
+        c.id, amount, payDate, str(body.method), str(body.remark), user.name, now
+      );
+      db.prepare("UPDATE contracts SET updated_at = ? WHERE id = ?").run(now, c.id);
+      return { ok: true, received: receivedOf(db, c.id) };
+    });
+  });
+  add("DELETE", "/payments/:id", ({ params }) => {
+    const id = Number(params.id);
+    getOr404(db, "SELECT id FROM contract_payments WHERE id = ?", id, "收款记录");
+    db.prepare("DELETE FROM contract_payments WHERE id = ?").run(id);
+    return { ok: true };
   });
 
   // 交接
@@ -543,5 +577,6 @@ export function buildRoutes(db) {
   });
 
   registerImplRoutes(db, add);
+  registerSalesDirectorRoutes(db, add);
   return routes;
 }

@@ -1,0 +1,13 @@
+{
+  "key": "sales_director",
+  "displayName": "数字销售总监",
+  "description": "按销售人员统计商机数量、跟进过程、成交率与收款情况,点评跟进质量,向总经理和销售经理提交销售分析报告。",
+  "channels": ["backend", "http"],
+  "scene": "tool_call",
+  "maxRounds": 6,
+  "timeoutMs": 140000,
+  "maxTokens": 4000,
+  "platformTools": [],
+  "handoffMemos": false,
+  "conversationGuard": false
+}

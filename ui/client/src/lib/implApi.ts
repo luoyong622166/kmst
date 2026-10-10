@@ -3,7 +3,7 @@
  */
 import type { ContractModule, Stage } from "./crmApi";
 
-export type ImplRole = "admin" | "director" | "consultant" | "gm";
+export type ImplRole = "admin" | "director" | "consultant" | "gm" | "sales_manager";
 
 export type ImplMeta = {
   me: { id: number; name: string };
