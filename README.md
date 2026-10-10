@@ -41,6 +41,7 @@ ui/client/src/        后台页面(React)
 deploy/
   deploy.sh           一键部署
   apply-ui.mjs        把页面/菜单/路由装进平台界面源码
+  apply-theme.mjs     后台主题色改为蓝色(品牌红 → 蓝,按深浅对应替换)
   nginx-xiyejia.conf  nginx 配置
 ```
 

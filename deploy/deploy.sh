@@ -9,7 +9,7 @@
 #   2. 首次生成 /etc/sales-crm.env(工商接口密钥等配置写在这里)
 #   3. 每日 02:30 自动备份数据库到 /var/backups/sales-crm(保留 30 份)
 #   4. nginx 增加 /sales-api/ 转发
-#   5. 销售管理页面装进平台后台源码并重建界面(失败时平台自动回滚到原界面)
+#   5. 销售管理页面装进平台后台源码、主题色改为蓝色,并重建界面(失败时平台自动回滚到原界面)
 # ============================================================
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -72,6 +72,7 @@ fi
 
 echo "==> [4/5] 安装销售管理页面并重建后台界面(约 1-3 分钟)"
 node "$REPO_DIR/deploy/apply-ui.mjs" "$APP_DIR"
+node "$REPO_DIR/deploy/apply-theme.mjs" "$APP_DIR"
 bash "$APP_DIR/rebuild-ui.sh"
 
 echo "==> [5/5] 预压缩前端资源(小带宽下加速首次加载)"
