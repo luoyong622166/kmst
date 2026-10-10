@@ -3,13 +3,10 @@ import { nextSerialNo, tx } from "./db.mjs";
 import { PLACEHOLDERS, renderContract } from "./contract.mjs";
 import { companyDetail, lookupProvider, searchCompanies } from "./lookup.mjs";
 import { companyNameKey, isValidCreditCode, normalizeCreditCode, nowISO, todayCN } from "./util.mjs";
+import { HttpError } from "./errors.mjs";
+import { registerImplRoutes } from "./impl.mjs";
 
-export class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
+export { HttpError };
 
 export const OPP_STAGES = [
   { key: "new", label: "新商机" },
@@ -262,10 +259,11 @@ function handoverRow(row) {
 // ---------- 路由表 ----------
 export function buildRoutes(db) {
   const routes = [];
-  const add = (method, pattern, handler) => {
+  // opts.raw:请求体按原始字节读取(文件上传),opts.maxBody:请求体上限
+  const add = (method, pattern, handler, opts = {}) => {
     const keys = [];
     const re = new RegExp("^" + pattern.replace(/:(\w+)/g, (_, k) => (keys.push(k), "([^/]+)")) + "$");
-    routes.push({ method, re, keys, handler });
+    routes.push({ method, re, keys, handler, ...opts });
   };
 
   add("GET", "/meta", ({ user }) => ({
@@ -544,5 +542,6 @@ export function buildRoutes(db) {
     return handoverRow(db.prepare(`${HANDOVER_SELECT} WHERE h.id = ?`).get(id));
   });
 
+  registerImplRoutes(db, add);
   return routes;
 }

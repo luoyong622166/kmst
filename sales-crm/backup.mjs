@@ -17,4 +17,8 @@ db.close();
 
 const files = fs.readdirSync(DIR).filter(f => /^crm-\d+\.db$/.test(f)).sort();
 for (const f of files.slice(0, Math.max(0, files.length - KEEP))) fs.unlinkSync(path.join(DIR, f));
+
+// 实施文档:增量复制(文件名唯一且上传后不再修改,已备份的跳过)
+const FILES_DIR = process.env.CRM_FILES_DIR || "/var/lib/sales-crm/files";
+if (fs.existsSync(FILES_DIR)) fs.cpSync(FILES_DIR, path.join(DIR, "files"), { recursive: true, force: false });
 console.log(`[sales-crm backup] ${target}`);

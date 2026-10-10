@@ -103,6 +103,136 @@ CREATE TABLE IF NOT EXISTS settings (
   key    TEXT PRIMARY KEY,
   value  TEXT
 );
+
+-- ===== 实施管理 =====
+CREATE TABLE IF NOT EXISTS impl_members (
+  user_id     INTEGER PRIMARY KEY,               -- 平台后台账号 id
+  name        TEXT NOT NULL,
+  role        TEXT NOT NULL,                     -- director 实施总监 | consultant 实施顾问 | gm 总经理
+  created_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS impl_projects (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_no       TEXT NOT NULL UNIQUE,
+  handover_id      INTEGER NOT NULL UNIQUE REFERENCES handovers(id),
+  name             TEXT NOT NULL,
+  customer_name    TEXT NOT NULL,
+  consultant_id    INTEGER NOT NULL,
+  consultant_name  TEXT NOT NULL,
+  assigned_by      TEXT,
+  planned_start    TEXT NOT NULL,
+  planned_end      TEXT NOT NULL,                -- 要求的实施完成时间
+  status           TEXT NOT NULL DEFAULT 'assigned', -- assigned 待接收 | in_progress 实施中 | completed 已完成
+  remark           TEXT,
+  assigned_at      TEXT NOT NULL,
+  accepted_at      TEXT,
+  completed_at     TEXT,
+  updated_at       TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS impl_stages (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id    INTEGER NOT NULL REFERENCES impl_projects(id) ON DELETE CASCADE,
+  stage_key     TEXT NOT NULL,                   -- prepare | blueprint | golive | acceptance
+  seq           INTEGER NOT NULL,
+  planned_end   TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'pending', -- pending | in_progress | done
+  progress      INTEGER NOT NULL DEFAULT 0,      -- 最近一次汇报的阶段进度 %
+  started_at    TEXT,
+  completed_at  TEXT,
+  UNIQUE (project_id, stage_key)
+);
+
+CREATE TABLE IF NOT EXISTS impl_reports (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id       INTEGER NOT NULL REFERENCES impl_projects(id) ON DELETE CASCADE,
+  stage_key        TEXT NOT NULL,
+  report_date      TEXT NOT NULL,
+  progress         INTEGER NOT NULL,
+  work_content     TEXT NOT NULL,
+  completed_items  TEXT,
+  problems         TEXT,
+  next_plan        TEXT,
+  request_complete INTEGER NOT NULL DEFAULT 0,   -- 申请本阶段完成
+  created_by       TEXT,
+  created_at       TEXT NOT NULL,
+  review_status    TEXT NOT NULL DEFAULT 'pending', -- pending 审核中 | passed | failed | error
+  review_score     INTEGER,
+  review_summary   TEXT,
+  review_issues    TEXT NOT NULL DEFAULT '[]',   -- JSON [{problem, norm, suggestion, severity}]
+  reviewed_by      TEXT,
+  reviewed_at      TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_impl_reports_project ON impl_reports(project_id, stage_key);
+
+CREATE TABLE IF NOT EXISTS impl_files (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id   INTEGER REFERENCES impl_projects(id) ON DELETE CASCADE, -- NULL = 公司项目管理规范
+  stage_key    TEXT,
+  filename     TEXT NOT NULL,
+  stored_name  TEXT NOT NULL,
+  size         INTEGER NOT NULL,
+  text_excerpt TEXT,                             -- 可提取文字的文档(txt/md/docx)前若干字,供数字总监审核
+  uploaded_by  TEXT,
+  created_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS impl_delays (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id      INTEGER NOT NULL REFERENCES impl_projects(id) ON DELETE CASCADE,
+  stage_key       TEXT,                          -- NULL = 项目整体超期
+  due_date        TEXT NOT NULL,
+  detected_at     TEXT NOT NULL,
+  last_reminded   TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'awaiting_plan', -- awaiting_plan 待提交方案 | submitted 待审批 | approved | rejected | resolved
+  plan_reason     TEXT,
+  plan_new_date   TEXT,
+  plan_measures   TEXT,
+  submitted_at    TEXT,
+  decided_by      TEXT,
+  decided_at      TEXT,
+  decision_note   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_impl_delays_project ON impl_delays(project_id, status);
+
+CREATE TABLE IF NOT EXISTS impl_issues (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id   INTEGER NOT NULL REFERENCES impl_projects(id) ON DELETE CASCADE,
+  stage_key    TEXT,
+  report_id    INTEGER REFERENCES impl_reports(id) ON DELETE SET NULL,
+  problem      TEXT NOT NULL,
+  norm         TEXT,
+  suggestion   TEXT,
+  severity     TEXT NOT NULL DEFAULT '中',
+  status       TEXT NOT NULL DEFAULT 'open',     -- open | resolved
+  resolved_by  TEXT,
+  resolved_at  TEXT,
+  created_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS impl_issue_lists (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  list_date    TEXT NOT NULL UNIQUE,             -- 每天一份,当天有新问题时更新
+  summary      TEXT NOT NULL,
+  content      TEXT NOT NULL,                    -- JSON 快照
+  read_at      TEXT,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS impl_notifications (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  recipient_id    INTEGER,                       -- NULL = 发给某个角色
+  recipient_role  TEXT,
+  type            TEXT NOT NULL,                 -- delay_reminder | review_failed | review_passed | issue_list | delay_decision | assigned
+  title           TEXT NOT NULL,
+  content         TEXT,
+  link            TEXT,
+  read_at         TEXT,
+  created_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_impl_notifications_recipient ON impl_notifications(recipient_id, read_at);
 `;
 
 export function openDb(file) {

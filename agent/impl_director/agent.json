@@ -1,0 +1,13 @@
+{
+  "key": "impl_director",
+  "displayName": "实施管理数字总监",
+  "description": "负责审核实施顾问的项目进度与阶段汇报,发现延期与不合规问题,向总经理提交问题清单。",
+  "channels": ["backend", "http"],
+  "scene": "tool_call",
+  "maxRounds": 6,
+  "timeoutMs": 120000,
+  "maxTokens": 2000,
+  "platformTools": [],
+  "handoffMemos": false,
+  "conversationGuard": false
+}

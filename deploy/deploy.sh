@@ -5,11 +5,11 @@
 #   bash deploy/deploy.sh --skip-ui   # 只更新后端服务,不重建后台界面
 #
 # 做的事:
-#   1. 后端 sales-crm 同步到 /opt/sales-crm,pm2 启动/重启(数据在 /var/lib/sales-crm,不受影响)
+#   1. 后端 sales-crm 同步到 /opt/sales-crm,数字总监 AI 员工装进平台 custom/agents,pm2 启动/重启(数据在 /var/lib/sales-crm,不受影响)
 #   2. 首次生成 /etc/sales-crm.env(工商接口密钥等配置写在这里)
 #   3. 每日 02:30 自动备份数据库到 /var/backups/sales-crm(保留 30 份)
 #   4. nginx 增加 /sales-api/ 转发
-#   5. 销售管理页面装进平台后台源码、主题色改为蓝色,并重建界面(失败时平台自动回滚到原界面)
+#   5. 销售/实施管理页面装进平台后台源码、主题色改为蓝色,并重建界面(失败时平台自动回滚到原界面)
 # ============================================================
 set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -41,6 +41,29 @@ EOF
   echo "    已生成 $ENV_FILE"
 fi
 chmod 600 "$ENV_FILE"
+
+# 数字总监接通平台:平台 .env 只在末尾追加(不改已有行)两把内部密钥,sales-crm 用同一组
+#   INTERNAL_API_SECRET  sales-crm 调平台自建 Agent(/api/custom-agent/impl_director/run)
+#   CRM_INTERNAL_TOKEN   数字总监的工具反查 sales-crm 的 /agent/* 只读接口
+append_platform_env() {
+  local key=$1
+  if ! grep -qE "^$key=" "$APP_DIR/.env"; then
+    [[ -n "$(tail -c1 "$APP_DIR/.env")" ]] && echo >> "$APP_DIR/.env"
+    echo "$key=$(openssl rand -hex 24)" >> "$APP_DIR/.env"
+  fi
+  grep -E "^$key=" "$APP_DIR/.env" | head -1 | cut -d= -f2-
+}
+INTERNAL_SECRET=$(append_platform_env INTERNAL_API_SECRET)
+CRM_TOKEN=$(append_platform_env CRM_INTERNAL_TOKEN)
+grep -qE "^INTERNAL_API_SECRET=" "$APP_DIR/.env" && grep -qE "^CRM_INTERNAL_TOKEN=" "$APP_DIR/.env" || { echo "❌ 平台 .env 写入内部密钥失败"; exit 1; }
+sed -i '/^PLATFORM_INTERNAL_SECRET=/d; /^CRM_INTERNAL_TOKEN=/d' "$ENV_FILE"
+printf 'PLATFORM_INTERNAL_SECRET=%s\nCRM_INTERNAL_TOKEN=%s\n' "$INTERNAL_SECRET" "$CRM_TOKEN" >> "$ENV_FILE"
+mkdir -p /var/lib/sales-crm/files
+
+# 实施管理数字总监:平台自建 AI 员工
+mkdir -p "$APP_DIR/custom/agents/impl_director"
+cp "$REPO_DIR/agent/impl_director/"* "$APP_DIR/custom/agents/impl_director/"
+
 # 平台端口取自平台 .env(nginx 接管 80 后平台在 3000)
 PLATFORM_PORT=$(grep -E '^PORT=' "$APP_DIR/.env" | head -1 | cut -d= -f2- || true)
 if [[ -n "$PLATFORM_PORT" && "$PLATFORM_PORT" != "3000" ]]; then
@@ -66,7 +89,8 @@ nginx -t
 systemctl reload nginx
 
 if [[ $SKIP_UI -eq 1 ]]; then
-  echo "==> 跳过界面重建(--skip-ui)"
+  echo "==> 跳过界面重建(--skip-ui),重启平台以加载数字总监配置"
+  pm2 restart my-agent-platform >/dev/null
   exit 0
 fi
 
