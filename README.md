@@ -109,3 +109,25 @@ pm2 logs sales-crm --lines 100 --nostream     # 日志
 pm2 restart sales-crm                         # 重启
 node /opt/sales-crm/backup.mjs                # 手动备份
 ```
+
+## 驾校培训报名系统(driving-school)
+
+独立服务,不改平台源码。学员手机扫码报名 → 填写基础信息、选择课程(A照/B照/C照)→ 阅读合同并手写签名 → 付款 → 自动生成电子培训合同。
+
+| 入口 | 地址 |
+| --- | --- |
+| 学员报名(手机) | `http://<服务器IP>/driving/` |
+| 管理后台 | `http://<服务器IP>/driving/admin`,密码见 `/etc/driving-school.env` 的 `DS_ADMIN_PASSWORD` |
+| 电子合同 | `http://<服务器IP>/driving/contract/<报名凭证>`(付款后生成,可打印/存 PDF) |
+
+后台功能:数据概览、报名学员(详情/确认线下收款/取消/导出 CSV)、课程价格维护、报名二维码下载、驾校信息与合同条款模板、付款方式切换。
+
+- 服务 `/opt/driving-school`,pm2 进程 `driving-school`,端口 3200,nginx `/driving/` 转发
+- 数据 SQLite `/var/lib/driving-school/ds.db`,每日 02:40 备份到 `/var/backups/driving-school`
+- 付款方式:`在线支付(演示)` 不真实扣款;`线下缴费` 由后台「确认已线下收款」后生成合同。接入微信/支付宝需商户号后再开发
+- 改价只影响新报名;合同在付款时生成快照,之后修改条款模板不影响已签合同
+
+```bash
+cd /root/kmst && git pull && bash deploy/deploy-driving.sh   # 部署 / 更新
+pm2 logs driving-school --lines 100 --nostream               # 日志
+```

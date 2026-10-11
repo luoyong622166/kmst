@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>驾校在线报名</title>
+<style>
+:root{--primary:#1d6fe0;--primary-soft:#e8f0fd;--bg:#f2f4f7;--card:#fff;--text:#1a1a1a;--muted:#6b7280;--line:#e5e7eb;--danger:#d93025;--ok:#16a34a;--warn:#d97706}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+header.hero{background:linear-gradient(135deg,#1d6fe0,#3b8cff);color:#fff;padding:28px 20px 56px}
+header.hero h1{margin:0;font-size:22px}
+header.hero p{margin:6px 0 0;opacity:.9;font-size:13px}
+.topbar{display:flex;align-items:center;gap:8px;height:48px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.topbar button{border:0;background:none;font-size:22px;padding:0 6px;color:var(--text)}
+.topbar b{font-size:16px}
+.card{background:var(--card);border-radius:12px;padding:16px;margin-top:12px}
+.hero+.wrap .card:first-child{margin-top:-40px}
+h2{font-size:16px;margin:0 0 10px}
+.muted{color:var(--muted);font-size:13px}
+.course{display:block;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;position:relative;cursor:pointer}
+.course input{position:absolute;opacity:0}
+.course .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.course .n{font-weight:600;font-size:16px}
+.course .p{color:var(--danger);font-weight:700;font-size:18px;white-space:nowrap}
+.course .p small{font-size:12px}
+.course .d{color:var(--muted);font-size:13px;margin-top:2px}
+.course.on{border-color:var(--primary);background:var(--primary-soft)}
+.field{margin-top:12px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:16px;font-family:inherit;background:#fff;color:var(--text)}
+.field input:focus,.field textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary)}
+.hint{font-size:12px;color:var(--muted);margin-top:3px}
+.btn{display:block;width:100%;border:0;border-radius:24px;background:var(--primary);color:#fff;font-size:16px;font-weight:600;padding:13px;cursor:pointer;text-align:center;text-decoration:none}
+.btn[disabled]{opacity:.55}
+.btn.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+.footer{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:5}
+.footer .in{max-width:528px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.footer .sum{flex:1;font-size:13px;color:var(--muted)}
+.footer .sum b{color:var(--danger);font-size:18px}
+.footer .btn{width:auto;flex:0 0 52%}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--muted);white-space:nowrap}
+.kv span:last-child{text-align:right;word-break:break-all}
+.terms{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7;background:#fafbfc}
+.terms h3{font-size:13px;margin:8px 0 2px}
+.terms p{margin:0 0 4px}
+.terms u{text-decoration:none;color:var(--primary);font-weight:600}
+.pad-wrap{position:relative;border:1.5px dashed #b6bcc6;border-radius:10px;background:#fff;height:180px;margin-top:8px}
+.pad-wrap canvas{width:100%;height:100%;display:block;touch-action:none;border-radius:10px}
+.pad-wrap .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#b6bcc6;pointer-events:none;font-size:18px;letter-spacing:4px}
+.pad-tools{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.link{border:0;background:none;color:var(--primary);font-size:14px;padding:4px 0;cursor:pointer}
+.agree{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:14px}
+.agree input{width:18px;height:18px;margin-top:2px;flex:none}
+.status{text-align:center;padding:26px 16px 18px}
+.status .icon{width:64px;height:64px;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff}
+.status .amount{font-size:32px;font-weight:700;margin:4px 0}
+.status .amount small{font-size:16px}
+.badge{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--primary-soft);color:var(--primary)}
+.badge.paid{background:#dcfce7;color:var(--ok)}
+.badge.cancelled{background:#f3f4f6;color:var(--muted)}
+.badge.pending{background:#fef3c7;color:var(--warn)}
+.order-item{display:block;color:inherit;text-decoration:none;padding:12px 0;border-bottom:1px solid var(--line)}
+.order-item:last-child{border-bottom:0}
+.toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:rgba(0,0,0,.78);color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:20;max-width:80%;text-align:center;display:none}
+.notice{font-size:13px;color:var(--muted);background:#fffbeb;border-radius:8px;padding:8px 10px;margin-top:10px}
+.mock-tip{font-size:12px;color:var(--warn);text-align:center;margin-top:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- 首页:课程与价格 -->
+<section data-view="home" hidden>
+  <header class="hero"><h1 id="schoolName">驾校在线报名</h1><p>扫码报名 · 在线缴费 · 电子合同</p></header>
+  <div class="wrap">
+    <div class="card">
+      <h2>报名课程</h2>
+      <div id="homeCourses" class="muted">加载中…</div>
+      <div id="homeNotice" class="notice" hidden></div>
+    </div>
+    <div class="card" id="myOrdersCard" hidden>
+      <h2>我在本机的报名</h2>
+      <div id="myOrders"></div>
+    </div>
+    <div class="card" id="schoolCard" hidden><h2>联系驾校</h2><div id="schoolInfo"></div></div>
+    <p style="text-align:center"><a class="link" href="#/lookup">已报名?查询我的报名 / 合同</a></p>
+  </div>
+  <div class="footer"><div class="in"><a class="btn" href="#/form" style="flex:1">立即报名</a></div></div>
+</section>
+
+<!-- 第 1 步:学员信息 + 选择课程 -->
+<section data-view="form" hidden>
+  <div class="topbar"><button type="button" onclick="history.back()" aria-label="返回">‹</button><b>填写报名信息(1/3)</b></div>
+  <div class="wrap">
+    <form id="regForm" novalidate>
+      <div class="card">
+        <h2>学员基础信息</h2>
+        <div class="field"><label for="fName">姓名</label><input id="fName" name="name" autocomplete="name" placeholder="与身份证一致" maxlength="30"></div>
+        <div class="field"><label for="fId">身份证号</label><input id="fId" name="idCard" placeholder="18 位身份证号码" maxlength="18" autocomplete="off">
+          <div class="hint" id="idHint"></div></div>
+        <div class="field"><label for="fPhone">手机号</label><input id="fPhone" name="phone" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="用于接收培训通知"></div>
+        <div class="field"><label for="fAddr">现住址</label><textarea id="fAddr" name="address" rows="2" maxlength="100" placeholder="省市区 + 详细地址"></textarea></div>
+      </div>
+      <div class="card">
+        <h2>选择学习课程</h2>
+        <div id="formCourses"></div>
+      </div>
+    </form>
+  </div>
+  <div class="footer"><div class="in"><div class="sum" id="formSum">请选择课程</div><button class="btn" type="button" id="toSign">下一步</button></div></div>
+</section>
+
+<!-- 第 2 步:确认信息 + 合同条款 + 手写签名 -->
+<section data-view="sign" hidden>
+  <div class="topbar"><button type="button" onclick="history.back()" aria-label="返回">‹</button><b>确认并签署(2/3)</b></div>
+  <div class="wrap">
+    <div class="card"><h2>报名信息</h2><div id="confirmInfo"></div></div>
+    <div class="card">
+      <h2>培训合同条款</h2>
+      <div class="terms" id="termsBox">加载中…</div>
+      <p class="muted" style="margin:6px 0 0">付款成功后,系统将根据以上条款生成正式电子合同。</p>
+    </div>
+    <div class="card">
+      <h2>学员手写签名</h2>
+      <div class="pad-wrap"><canvas id="pad"></canvas><div class="ph" id="padPh">请在此处签名</div></div>
+      <div class="pad-tools"><span class="muted">请用手指签署本人姓名</span><button type="button" class="link" id="padClear">重写</button></div>
+      <label class="agree"><input type="checkbox" id="agree"><span>我已阅读并同意《机动车驾驶培训合同》全部条款,确认所填信息真实有效。</span></label>
+    </div>
+  </div>
+  <div class="footer"><div class="in"><div class="sum" id="signSum"></div><button class="btn" type="button" id="submitReg">提交报名</button></div></div>
+</section>
+
+<!-- 第 3 步:付款 / 结果 -->
+<section data-view="order" hidden>
+  <div class="topbar"><button type="button" onclick="location.hash='#/'" aria-label="首页">‹</button><b id="orderTitle">报名订单</b></div>
+  <div class="wrap">
+    <div class="card" id="orderStatus"></div>
+    <div class="card"><h2>报名信息</h2><div id="orderInfo"></div></div>
+  </div>
+  <div class="footer" id="orderFooter" hidden><div class="in" id="orderActions"></div></div>
+</section>
+
+<!-- 查询 -->
+<section data-view="lookup" hidden>
+  <div class="topbar"><button type="button" onclick="location.hash='#/'" aria-label="首页">‹</button><b>查询我的报名</b></div>
+  <div class="wrap">
+    <div class="card">
+      <div class="field" style="margin-top:0"><label for="lPhone">报名手机号</label><input id="lPhone" type="tel" inputmode="numeric" maxlength="11"></div>
+      <div class="field"><label for="lId">身份证后 6 位</label><input id="lId" maxlength="6" autocomplete="off"></div>
+      <div style="margin-top:16px"><button class="btn" type="button" id="lookupBtn">查询</button></div>
+    </div>
+    <div class="card" id="lookupResult" hidden></div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  var API = "/driving/api/public";
+  var INFO = null;          // 驾校信息与课程
+  var draft = null;         // 第 1 步填写的内容
+  var pollTimer = null;
+
+  function $(s) { return document.querySelector(s); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function money(fen) { return (fen / 100).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function toast(msg) { var t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(function () { t.style.display = "none"; }, 2400); }
+
+  function api(path, opts) {
+    opts = opts || {};
+    return fetch(API + path, {
+      method: opts.method || "GET",
+      headers: opts.body ? { "Content-Type": "application/json" } : {},
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) throw new Error(d.error || "网络异常,请重试");
+        return d;
+      });
+    }, function () { throw new Error("网络异常,请检查网络后重试"); });
+  }
+
+  // 本机保存的报名凭证(换手机或清缓存后可用「查询」找回)
+  function savedTokens() { try { return JSON.parse(localStorage.getItem("ds_tokens") || "[]"); } catch (e) { return []; } }
+  function saveToken(t) { try { var a = savedTokens().filter(function (x) { return x !== t; }); a.unshift(t); localStorage.setItem("ds_tokens", JSON.stringify(a.slice(0, 10))); } catch (e) {} }
+
+  // ---------- 身份证校验(与服务端一致) ----------
+  function parseId(raw) {
+    var id = String(raw || "").trim().toUpperCase();
+    if (!/^\d{17}[\dX]$/.test(id)) return null;
+    var W = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2], sum = 0;
+    for (var i = 0; i < 17; i++) sum += Number(id[i]) * W[i];
+    if ("10X98765432"[sum % 11] !== id[17]) return null;
+    var y = +id.slice(6, 10), m = +id.slice(10, 12), d = +id.slice(12, 14), dt = new Date(Date.UTC(y, m - 1, d));
+    if (y < 1900 || dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+    return { id: id, birth: id.slice(6, 10) + "-" + id.slice(10, 12) + "-" + id.slice(12, 14), gender: Number(id[16]) % 2 ? "男" : "女" };
+  }
+  function ageOf(birth) {
+    var now = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+    var a = Number(now.slice(0, 4)) - Number(birth.slice(0, 4));
+    return now.slice(5) < birth.slice(5) ? a - 1 : a;
+  }
+
+  // ---------- 加载驾校信息 ----------
+  function loadInfo() {
+    if (INFO) return Promise.resolve(INFO);
+    return api("/info").then(function (d) {
+      INFO = d;
+      document.title = d.school.name + " · 在线报名";
+      $("#schoolName").textContent = d.school.name;
+      renderCourses();
+      if (d.school.notice) { $("#homeNotice").textContent = d.school.notice; $("#homeNotice").hidden = false; }
+      var lines = [];
+      if (d.school.phone) lines.push('<div class="kv"><span>电话</span><span><a href="tel:' + esc(d.school.phone) + '">' + esc(d.school.phone) + "</a></span></div>");
+      if (d.school.address) lines.push('<div class="kv"><span>地址</span><span>' + esc(d.school.address) + "</span></div>");
+      if (lines.length) { $("#schoolInfo").innerHTML = lines.join(""); $("#schoolCard").hidden = false; }
+      return d;
+    });
+  }
+
+  function courseHtml(c, selectable) {
+    return '<label class="course">' + (selectable ? '<input type="radio" name="courseId" value="' + c.id + '">' : "") +
+      '<div class="t"><span class="n">' + esc(c.name) + '</span><span class="p"><small>¥</small>' + money(c.priceFen) + "</span></div>" +
+      '<div class="d">准驾车型:' + esc(c.licenseClass) + " · 年满 " + c.minAge + " 周岁</div>" +
+      (c.description ? '<div class="d">' + esc(c.description) + "</div>" : "") + "</label>";
+  }
+
+  function renderCourses() {
+    var cs = INFO.courses;
+    $("#homeCourses").innerHTML = cs.length ? cs.map(function (c) { return courseHtml(c, false); }).join("") : "暂无可报名的课程";
+    $("#formCourses").innerHTML = cs.length ? cs.map(function (c) { return courseHtml(c, true); }).join("") : '<p class="muted">暂无可报名的课程</p>';
+    Array.prototype.forEach.call(document.querySelectorAll('#formCourses input'), function (el) {
+      el.addEventListener("change", updateFormSum);
+    });
+  }
+
+  function selectedCourse() {
+    var el = document.querySelector('#formCourses input:checked');
+    if (!el || !INFO) return null;
+    for (var i = 0; i < INFO.courses.length; i++) if (String(INFO.courses[i].id) === el.value) return INFO.courses[i];
+    return null;
+  }
+  function updateFormSum() {
+    var c = selectedCourse();
+    // 选中样式用 class 而不是 :has(),兼容旧版微信内置浏览器
+    Array.prototype.forEach.call(document.querySelectorAll("#formCourses .course"), function (el) {
+      el.classList.toggle("on", el.querySelector("input").checked);
+    });
+    $("#formSum").innerHTML = c ? esc(c.name) + " 合计 <b>¥" + money(c.priceFen) + "</b>" : "请选择课程";
+  }
+
+  // ---------- 第 1 步 ----------
+  $("#fId").addEventListener("input", function () {
+    var v = this.value.trim(), h = $("#idHint");
+    if (v.length < 18) { h.textContent = ""; return; }
+    var p = parseId(v);
+    h.textContent = p ? "性别:" + p.gender + " · 出生日期:" + p.birth : "身份证号码校验不通过,请核对";
+    h.style.color = p ? "" : "var(--danger)";
+  });
+
+  $("#toSign").addEventListener("click", function () {
+    var name = $("#fName").value.trim(), idc = parseId($("#fId").value), phone = $("#fPhone").value.trim(),
+      address = $("#fAddr").value.trim(), c = selectedCourse();
+    if (!/^[一-龥·A-Za-z ]{2,30}$/.test(name)) return toast("请填写身份证上的真实姓名");
+    if (!idc) return toast("身份证号码不正确,请核对");
+    if (!/^1\d{10}$/.test(phone)) return toast("请填写 11 位手机号");
+    if (address.length < 4) return toast("请填写详细住址");
+    if (!c) return toast("请选择学习课程");
+    var age = ageOf(idc.birth);
+    if (age < c.minAge) return toast("报名" + c.name + "需年满 " + c.minAge + " 周岁");
+    draft = { name: name, idCard: idc.id, gender: idc.gender, birth: idc.birth, phone: phone, address: address, course: c };
+    location.hash = "#/sign";
+  });
+
+  // ---------- 签名板 ----------
+  var pad = (function () {
+    var canvas = $("#pad"), ctx = canvas.getContext("2d"), drawing = false, dirty = false, last = null;
+    function reset() {
+      var r = canvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(r.width * dpr));
+      canvas.height = Math.max(1, Math.round(r.height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = "#111";
+      dirty = false; $("#padPh").hidden = false;
+    }
+    function pos(e) { var r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    canvas.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); drawing = true; last = pos(e);
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      ctx.beginPath(); ctx.arc(last.x, last.y, 1.4, 0, Math.PI * 2); ctx.fillStyle = "#111"; ctx.fill();
+    });
+    canvas.addEventListener("pointermove", function (e) {
+      if (!drawing) return;
+      e.preventDefault();
+      var p = pos(e);
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      last = p;
+      if (!dirty) { dirty = true; $("#padPh").hidden = true; }
+    });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { canvas.addEventListener(t, function () { drawing = false; }); });
+    $("#padClear").addEventListener("click", reset);
+    return {
+      reset: reset,
+      isEmpty: function () { return !dirty; },
+      // 缩小到 480 宽再导出,控制上传体积
+      toDataURL: function () {
+        var out = document.createElement("canvas"), w = 480;
+        out.width = w; out.height = Math.round(w * canvas.height / canvas.width);
+        out.getContext("2d").drawImage(canvas, 0, 0, out.width, out.height);
+        return out.toDataURL("image/png");
+      }
+    };
+  })();
+
+  // ---------- 第 2 步 ----------
+  function showSign() {
+    if (!draft) { location.replace("#/form"); return; }
+    var c = draft.course;
+    $("#confirmInfo").innerHTML = [
+      ["姓名", draft.name], ["性别", draft.gender], ["身份证号", draft.idCard], ["手机号", draft.phone], ["住址", draft.address],
+      ["报名课程", c.name + "(" + c.licenseClass + ")"], ["培训费用", "¥" + money(c.priceFen)]
+    ].map(function (kv) { return '<div class="kv"><span>' + kv[0] + "</span><span>" + esc(kv[1]) + "</span></div>"; }).join("");
+    $("#signSum").innerHTML = "应付 <b>¥" + money(c.priceFen) + "</b>";
+    $("#termsBox").textContent = "加载中…";
+    api("/contract-preview?courseId=" + c.id + "&name=" + encodeURIComponent(draft.name)).then(function (d) {
+      $("#termsBox").innerHTML = "<p><b>甲方:" + esc(d.schoolName) + "</b><br><b>乙方:" + esc(draft.name) + "</b></p>" + d.html;
+    }, function (e) { $("#termsBox").textContent = e.message; });
+    $("#agree").checked = false;
+    requestAnimationFrame(pad.reset);
+  }
+
+  $("#submitReg").addEventListener("click", function () {
+    if (!draft) return;
+    if (pad.isEmpty()) return toast("请先完成手写签名");
+    if (!$("#agree").checked) return toast("请阅读并勾选同意合同条款");
+    var btn = this; btn.disabled = true; btn.textContent = "提交中…";
+    api("/register", { method: "POST", body: {
+      name: draft.name, idCard: draft.idCard, phone: draft.phone, address: draft.address,
+      courseId: draft.course.id, signature: pad.toDataURL(), agree: true
+    } }).then(function (d) {
+      saveToken(d.token);
+      draft = null;
+      $("#regForm").reset(); $("#idHint").textContent = ""; updateFormSum();
+      location.replace("#/order/" + d.token);
+    }, function (e) { toast(e.message); }).then(function () { btn.disabled = false; btn.textContent = "提交报名"; });
+  });
+
+  // ---------- 第 3 步:付款 / 结果 ----------
+  function showOrder(token) {
+    $("#orderStatus").innerHTML = '<p class="muted" style="text-align:center">加载中…</p>';
+    $("#orderInfo").innerHTML = "";
+    $("#orderFooter").hidden = true;
+    api("/orders/" + token).then(function (d) { renderOrder(d, token); }, function (e) {
+      $("#orderStatus").innerHTML = '<p style="text-align:center">' + esc(e.message) + "</p>";
+    });
+  }
+
+  function renderOrder(d, token) {
+    var o = d.order, html = "", actions = "";
+    clearTimeout(pollTimer);
+    if (o.status === "paid") {
+      $("#orderTitle").textContent = "报名成功(3/3)";
+      html = '<div class="status"><div class="icon" style="background:var(--ok)">✓</div><h2>报名缴费成功</h2>' +
+        '<p class="muted">电子培训合同已生成,合同编号 ' + esc(o.contractNo) + "</p></div>";
+      actions = '<a class="btn" href="/driving/contract/' + token + '">查看电子合同</a>';
+    } else if (o.status === "pending") {
+      $("#orderTitle").textContent = "缴纳培训费(3/3)";
+      html = '<div class="status"><div class="icon" style="background:var(--warn)">¥</div><p class="muted">应付金额</p>' +
+        '<div class="amount"><small>¥</small>' + money(o.priceFen) + "</div>";
+      if (d.payMode === "mock") {
+        html += '<p class="muted">付款成功后自动生成电子合同</p></div>';
+        actions = '<button class="btn" type="button" id="payBtn">确认支付 ¥' + money(o.priceFen) + "</button>";
+      } else {
+        html += '<p>请到驾校前台缴纳培训费,工作人员确认收款后,电子合同将自动生成。</p>' +
+          (d.school.address ? '<p class="muted">地址:' + esc(d.school.address) + "</p>" : "") +
+          (d.school.phone ? '<p class="muted">电话:<a href="tel:' + esc(d.school.phone) + '">' + esc(d.school.phone) + "</a></p>" : "") + "</div>";
+        actions = '<button class="btn ghost" type="button" id="refreshBtn">我已缴费,刷新状态</button>';
+        pollTimer = setTimeout(function () { if (location.hash === "#/order/" + token) showOrder(token); }, 10000);
+      }
+    } else {
+      $("#orderTitle").textContent = "报名已取消";
+      html = '<div class="status"><div class="icon" style="background:#9ca3af">×</div><h2>该报名已取消</h2><p class="muted">' +
+        esc(o.cancelReason || "") + "</p></div>";
+      actions = '<a class="btn" href="#/form">重新报名</a>';
+    }
+    $("#orderStatus").innerHTML = html;
+    $("#orderInfo").innerHTML = [
+      ["状态", '<span class="badge ' + o.status + '">' + esc(o.statusText) + "</span>"],
+      ["姓名", esc(o.name)], ["身份证号", esc(o.idCard)], ["手机号", esc(o.phone)],
+      ["报名课程", esc(o.courseName + "(" + o.licenseClass + ")")], ["培训费用", "¥" + money(o.priceFen)],
+      ["报名时间", esc(o.createdAt)]
+    ].concat(o.paidAt ? [["付款方式", esc(o.payMethodText)], ["付款时间", esc(o.paidAt)]] : [])
+      .map(function (kv) { return '<div class="kv"><span>' + kv[0] + "</span><span>" + kv[1] + "</span></div>"; }).join("");
+    $("#orderActions").innerHTML = actions;
+    $("#orderFooter").hidden = !actions;
+    if (d.payMode === "mock" && o.status === "pending") {
+      $("#orderStatus").insertAdjacentHTML("beforeend", '<div class="mock-tip">当前为演示支付环境,点击支付不会真实扣款</div>');
+    }
+    var pay = $("#payBtn");
+    if (pay) pay.addEventListener("click", function () {
+      pay.disabled = true; pay.textContent = "支付中…";
+      api("/orders/" + token + "/pay", { method: "POST", body: {} }).then(function () { showOrder(token); }, function (e) {
+        toast(e.message); pay.disabled = false; pay.textContent = "确认支付 ¥" + money(o.priceFen);
+      });
+    });
+    var rf = $("#refreshBtn");
+    if (rf) rf.addEventListener("click", function () { showOrder(token); });
+  }
+
+  // ---------- 本机报名列表 / 查询 ----------
+  function orderListHtml(orders) {
+    return orders.map(function (o) {
+      return '<a class="order-item" href="#/order/' + o.token + '"><div class="kv" style="border:0;padding:0"><span style="color:var(--text);font-weight:600">' +
+        esc(o.courseName) + " · " + esc(o.name) + '</span><span><span class="badge ' + o.status + '">' + esc(o.statusText) + "</span></span></div>" +
+        '<div class="muted">报名时间 ' + esc(o.createdAt) + " · ¥" + money(o.priceFen) + "</div></a>";
+    }).join("");
+  }
+
+  function showHome() {
+    var tokens = savedTokens();
+    if (!tokens.length) { $("#myOrdersCard").hidden = true; return; }
+    Promise.all(tokens.slice(0, 5).map(function (t) { return api("/orders/" + t).then(function (d) { return d.order; }, function () { return null; }); }))
+      .then(function (list) {
+        list = list.filter(Boolean);
+        $("#myOrdersCard").hidden = !list.length;
+        $("#myOrders").innerHTML = orderListHtml(list);
+      });
+  }
+
+  $("#lookupBtn").addEventListener("click", function () {
+    var phone = $("#lPhone").value.trim(), tail = $("#lId").value.trim().toUpperCase();
+    if (!/^1\d{10}$/.test(phone)) return toast("请填写报名手机号");
+    if (!/^\d{5}[\dX]$/.test(tail)) return toast("请填写身份证后 6 位");
+    api("/lookup", { method: "POST", body: { phone: phone, idTail: tail } }).then(function (d) {
+      d.orders.forEach(function (o) { saveToken(o.token); });
+      $("#lookupResult").hidden = false;
+      $("#lookupResult").innerHTML = d.orders.length ? orderListHtml(d.orders) : '<p class="muted" style="text-align:center">没有查到报名记录</p>';
+    }, function (e) { toast(e.message); });
+  });
+
+  // ---------- 路由 ----------
+  function route() {
+    var h = location.hash || "#/", m;
+    clearTimeout(pollTimer);
+    var view = "home";
+    if (h === "#/form") view = "form";
+    else if (h === "#/sign") view = "sign";
+    else if (h === "#/lookup") view = "lookup";
+    else if ((m = h.match(/^#\/order\/([0-9a-f]{32})$/))) view = "order";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (s) { s.hidden = s.getAttribute("data-view") !== view; });
+    window.scrollTo(0, 0);
+    if (view === "sign") showSign();
+    else if (view === "order") showOrder(m[1]);
+    else if (view === "home") showHome();
+  }
+
+  window.addEventListener("hashchange", route);
+  loadInfo().then(route, function (e) {
+    route();
+    $("#homeCourses").textContent = e.message;
+  });
+})();
+</script>
+</body>
+</html>
